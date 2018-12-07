@@ -1,6 +1,6 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-# @Author: Farmer Li (jxli@mobvoi.com)
+# @Author: Farmer Li (jxli.farmer@gmail.com)
 # @Date:   2018-12-03 14:40:16
 
 import numpy as np
