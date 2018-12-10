@@ -16,7 +16,6 @@ plt.rcParams['image.cmap'] = 'gray'
 np.random.seed(1)
 
 
-# GRADED FUNCTION: initialize_parameters
 def initialize_parameters(n_x, n_h, n_y):
     """
     Argument:
@@ -47,8 +46,9 @@ def initialize_parameters(n_x, n_h, n_y):
     return {'W1': W1, 'b1': b1, 'W2': W2, 'b2': b2}
 
 
-params = initialize_parameters(2, 2, 1)
-print("\nW1 = " + str(params["W1"]))
+print('Test #initialize_parameters: ')
+params = initialize_parameters(3, 2, 1)
+print("W1 = " + str(params["W1"]))
 print("b1 = " + str(params["b1"]))
 print("W2 = " + str(params["W2"]))
 print("b2 = " + str(params["b2"]))
@@ -81,13 +81,12 @@ def initialize_parameters_deep(layer_dims):
     return params
 
 
+print('\nTest #initialize_parameters_deep: ')
 params = initialize_parameters_deep([5, 4, 3])
-print("\nW1 = " + str(params["W1"]))
+print("W1 = " + str(params["W1"]))
 print("b1 = " + str(params["b1"]))
 print("W2 = " + str(params["W2"]))
 print("b2 = " + str(params["b2"]))
-
-print('\n#### 4 - Forward propagation ####')
 
 
 # GRADED FUNCTION: linear_forward
@@ -114,9 +113,10 @@ def linear_forward(A, W, b):
     return Z, cache
 
 
+print('\nTest #linear_forward: ')
 A, W, b = linear_forward_test_case()
 Z, linear_cache = linear_forward(A, W, b)
-print("\nZ = " + str(Z))
+print("Z = " + str(Z))
 
 
 # GRADED FUNCTION: linear_activation_forward
@@ -141,7 +141,7 @@ def linear_activation_forward(A_prev, W, b, activation):
 
     if activation == 'sigmoid':
         A, activation_cache = sigmoid(Z)
-    else:
+    elif activation == 'relu':
         A, activation_cache = relu(Z)
 
     assert (A.shape == (W.shape[0], A_prev.shape[1]))
@@ -150,9 +150,10 @@ def linear_activation_forward(A_prev, W, b, activation):
     return A, cache
 
 
+print('\nTest #linear_activation_forward: ')
 A_prev, W, b = linear_activation_forward_test_case()
 A, _ = linear_activation_forward(A_prev, W, b, activation="sigmoid")
-print("\nWith sigmoid: A = " + str(A))
+print("With sigmoid: A = " + str(A))
 A, _ = linear_activation_forward(A_prev, W, b, activation="relu")
 print("With ReLU: A = " + str(A))
 
@@ -194,9 +195,10 @@ def L_model_forward(X, parameters):
     return AL, caches
 
 
-X, parameters = L_model_forward_test_case()
+print('\nTest #L_model_forward: ')
+X, parameters = L_model_forward_test_case_2hidden()
 AL, caches = L_model_forward(X, parameters)
-print("\nAL = " + str(AL))
+print("AL = " + str(AL))
 print("Length of caches list = " + str(len(caches)))
 
 
@@ -224,8 +226,9 @@ def compute_cost(AL, Y):
     return cost
 
 
+print('\nTest #compute_cost: ')
 Y, AL = compute_cost_test_case()
-print("\nCost = " + str(compute_cost(AL, Y)))
+print("Cost = " + str(compute_cost(AL, Y)))
 
 
 # GRADED FUNCTION: linear_backward
@@ -248,7 +251,7 @@ def linear_backward(dZ, cache):
 
     dW = np.dot(dZ, A_prev.T) / m
     db = np.sum(dZ, axis=1, keepdims=True) / m
-    dA_prev = np.dot(W.T, dZ)
+    dA_prev = W.T.dot(dZ)
 
     assert (dA_prev.shape == A_prev.shape)
     assert (dW.shape == W.shape)
@@ -257,9 +260,165 @@ def linear_backward(dZ, cache):
     return dA_prev, dW, db
 
 
-# Set up some test inputs
+print('\nTest #linear_backward: ')
 dZ, linear_cache = linear_backward_test_case()
 dA_prev, dW, db = linear_backward(dZ, linear_cache)
-print("\ndA_prev = " + str(dA_prev))
+print("dA_prev = " + str(dA_prev))
 print("dW = " + str(dW))
 print("db = " + str(db))
+
+
+# GRADED FUNCTION: linear_activation_backward
+def linear_activation_backward(dA, cache, activation):
+    """
+    Implement the backward propagation for the LINEAR->ACTIVATION layer.
+
+    Arguments:
+    dA -- post-activation gradient for current layer l
+    cache -- tuple of values (linear_cache, activation_cache) we store for computing backward propagation efficiently
+    activation -- the activation to be used in this layer, stored as a text string: "sigmoid" or "relu"
+
+    Returns:
+    dA_prev -- Gradient of the cost with respect to the activation (of the previous layer l-1), same shape as A_prev
+    dW -- Gradient of the cost with respect to W (current layer l), same shape as W
+    db -- Gradient of the cost with respect to b (current layer l), same shape as b
+    """
+
+    linear_cache, activation_cache = cache
+
+    if activation == 'relu':
+        dZ = relu_backward(dA, activation_cache)
+    elif activation == 'sigmoid':
+        dZ = sigmoid_backward(dA, activation_cache)
+
+    dA_prev, dW, db, = linear_backward(dZ, linear_cache)
+
+    return dA_prev, dW, db
+
+
+print('\nTest #linear_activation_backward: ')
+AL, linear_activation_cache = linear_activation_backward_test_case()
+
+dA_prev, dW, db = linear_activation_backward(AL, linear_activation_cache, activation="sigmoid")
+print("sigmoid:")
+print("dA_prev = " + str(dA_prev))
+print("dW = " + str(dW))
+print("db = " + str(db) + "\n")
+
+dA_prev, dW, db = linear_activation_backward(AL, linear_activation_cache, activation="relu")
+print("relu:")
+print("dA_prev = " + str(dA_prev))
+print("dW = " + str(dW))
+print("db = " + str(db))
+
+
+# GRADED FUNCTION: L_model_backward
+def L_model_backward(AL, Y, caches):
+    """
+    Implement the backward propagation for the [LINEAR->RELU] * (L-1) -> LINEAR -> SIGMOID group
+
+    Arguments:
+    AL -- probability vector, output of the forward propagation (L_model_forward())
+    Y -- true "label" vector (containing 0 if non-cat, 1 if cat)
+    caches -- list of caches containing:
+                every cache of linear_activation_forward() with "relu" (it's caches[l], for l in range(L-1) i.e l = 0...L-2)
+                the cache of linear_activation_forward() with "sigmoid" (it's caches[L-1])
+
+    Returns:
+    grads -- A dictionary with the gradients
+             grads["dA" + str(l)] = ...
+             grads["dW" + str(l)] = ...
+             grads["db" + str(l)] = ...
+    """
+
+    grads = {}
+    L = len(caches)
+    m = AL.shape[1]
+    Y = Y.reshape(AL.shape)
+
+    # Initializing the backpropagation
+    dAL = - (np.divide(Y, AL) - np.divide((1 - Y), (1 - AL)))
+    print(dAL.shape)
+
+    # Lth layer (SIGMOID -> LINEAR) gradients.
+    # Inputs: "AL, Y, caches".
+    # Outputs: "grads["dAL"], grads["dWL"], grads["dbL"]
+    current_cache = caches[-1]
+    dA_prev, dW, db = linear_activation_backward(dAL, current_cache, 'sigmoid')
+    grads['dA' + str(L)] = dA_prev
+    grads['dW' + str(L)] = dW
+    grads['db' + str(L)] = db
+
+    for l in reversed(range(L - 1)):
+        print('L : ', l)
+        current_cache = caches[l]
+        dA_prev, dW, db = linear_activation_backward(grads['dA' + str(l + 2)], current_cache, 'relu')
+        print('dA_prev shape: ', dA_prev.shape)
+        grads["dA" + str(l + 1)] = dA_prev
+        grads["dW" + str(l + 1)] = dW
+        grads["db" + str(l + 1)] = db
+
+    return grads
+
+
+print('\nTest #L_model_backward: ')
+AL, Y_assess, caches = L_model_backward_test_case()
+grads = L_model_backward(AL, Y_assess, caches)
+print_grads(grads)
+
+
+# GRADED FUNCTION: update_parameters
+def update_parameters(parameters, grads, learning_rate):
+    """
+    Update parameters using gradient descent
+
+    Arguments:
+    parameters -- python dictionary containing your parameters
+    grads -- python dictionary containing your gradients, output of L_model_backward
+
+    Returns:
+    parameters -- python dictionary containing your updated parameters
+                  parameters["W" + str(l)] = ...
+                  parameters["b" + str(l)] = ...
+    """
+
+    L = len(parameters) // 2  # number of layers in the neural network
+
+    # Update rule for each parameter. Use a for loop.
+    for l in range(L):
+        index_str = str(l + 1)
+        parameters['W' + index_str] -= learning_rate * grads['dW' + index_str]
+        parameters['b' + index_str] -= learning_rate * grads['db' + index_str]
+
+    return parameters
+
+
+print('\nTest #update_parameters: ')
+parameters, grads = update_parameters_test_case()
+parameters = update_parameters(parameters, grads, 0.1)
+print("W1 = " + str(parameters["W1"]))
+print("b1 = " + str(parameters["b1"]))
+print("W2 = " + str(parameters["W2"]))
+print("b2 = " + str(parameters["b2"]))
+
+
+def predict(X, Y, parameters):
+    L = len(parameters) // 2
+
+    A = X
+    for l in range(L-1):
+        W = parameters['W' + str(l + 1)]
+        b = parameters['b' + str(l + 1)]
+
+        Z = np.dot(W, A) + b
+        A,_ = relu(Z)
+
+    W = parameters['W' + str(L)]
+    b = parameters['b' + str(L)]
+    Z = np.dot(W, A) + b
+    A,_ = sigmoid(Z)
+
+    Y_predicted = np.asarray([A >= 0.5], int)
+    accuracy = np.sum(Y_predicted == Y) / X.shape[1]
+
+    return Y_predicted, accuracy
